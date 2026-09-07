@@ -1,0 +1,16 @@
+{
+	"name": "@carthound/worker",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@carthound/core": "0.0.0",
+		"@carthound/proto": "0.0.0",
+		"@carthound/retailers": "0.0.0"
+	},
+	"scripts": {
+		"build": "tsc --noEmit",
+		"dev": "node --watch src/index.ts",
+		"start": "node src/index.ts"
+	}
+}
