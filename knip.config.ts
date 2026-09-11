@@ -7,7 +7,10 @@ import {
 
 const config: SharedKnipConfig = createKnipConfig({
 	workspaces: {
-		".": rootWorkspaceConfig(),
+		".": rootWorkspaceConfig({
+			// Buf invokes this local plugin through packages/proto/buf.gen.yaml.
+			ignoreDependencies: ["@bufbuild/protoc-gen-es"],
+		}),
 		"apps/*": workspaceConfig(),
 		"packages/*": workspaceConfig({ entry: ["src/index.ts"] }),
 	},

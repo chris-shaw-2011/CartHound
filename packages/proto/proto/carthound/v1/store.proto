@@ -1,0 +1,60 @@
+edition = "2024";
+
+package carthound.v1;
+
+import "buf/validate/validate.proto";
+import "google/type/latlng.proto";
+import "google/type/postal_address.proto";
+
+// A physical retailer location, with identity fields and name required by domain.
+message Store {
+	// CartHound UUIDv7 in lowercase, hyphenated string form.
+	string id = 1 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Retailer's CartHound UUIDv7 (lowercase, hyphenated).
+	string retailer_id = 2 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Opaque retailer-specific identifier, interpreted only by its adapter.
+	string retailer_store_id = 3 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1
+			pattern: "\\S"
+		}
+	];
+
+	// Name of this specific store
+	string name = 4 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1
+			pattern: "\\S"
+		}
+	];
+
+	// A known postal address must include its region_code.
+	google.type.PostalAddress address = 5 [(buf.validate.field).cel = {
+		id: "store.address.region_code"
+		message: "address.region_code must be a two-letter uppercase CLDR region code"
+		expression: "this.region_code.matches(r'^[A-Z]{2}$')"
+	}];
+
+	// Set only when the complete coordinate pair is known; unset is valid.
+	google.type.LatLng location = 6 [(buf.validate.field).cel = {
+		id: "store.location.bounds"
+		message: "location must contain a latitude from -90 to 90 and a longitude from -180 to 180"
+		expression: "this.latitude >= -90.0 && this.latitude <= 90.0 && this.longitude >= -180.0 && this.longitude <= 180.0"
+	}];
+}

@@ -4,7 +4,17 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "tsc --noEmit"
+		"build": "tsc --noEmit",
+		"generate": "buf generate && node scripts/generate-index.ts",
+		"clean": "node --input-type=module -e 'import { rmSync } from \"node:fs\"; rmSync(\"src/gen\", { recursive: true, force: true });'",
+		"lint:proto": "buf lint && proto-style",
+		"update": "buf dep update"
 	},
-	"exports": "./src/index.ts"
+	"exports": "./src/gen/index.ts",
+	"dependencies": {
+		"@bufbuild/protobuf": "2.15.0"
+	},
+	"devDependencies": {
+		"@bufbuild/protovalidate": "1.2.0"
+	}
 }

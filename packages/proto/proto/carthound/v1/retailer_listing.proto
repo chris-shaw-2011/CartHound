@@ -1,0 +1,57 @@
+edition = "2024";
+
+package carthound.v1;
+
+import "buf/validate/validate.proto";
+
+// A retailer's representation of a specific Product. Identity fields are
+// required by domain; retailer identifiers are interpreted only by its adapter.
+message RetailerListing {
+	// CartHound UUIDv7 in lowercase, hyphenated string form.
+	string id = 1 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Retailer's CartHound UUIDv7 (lowercase, hyphenated).
+	string retailer_id = 2 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Product's CartHound UUIDv7 (lowercase, hyphenated).
+	string product_id = 3 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Opaque retailer-specific product/listing identifier.
+	string retailer_product_id = 4 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1
+			pattern: "\\S"
+		}
+	];
+
+	// Retailer-facing title when supplied.
+	string name = 5 [(buf.validate.field).string = {
+		min_len: 1
+		pattern: "\\S"
+	}];
+
+	// Original package text when supplied; does not replace structured size.
+	string raw_package_description = 6 [(buf.validate.field).string = {
+		min_len: 1
+		pattern: "\\S"
+	}];
+}

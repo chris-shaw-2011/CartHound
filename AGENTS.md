@@ -81,7 +81,8 @@ The same Product may have listings at multiple retailers.
 
 Retailer listings represent a retailer's representation of a Product and contain retailer-specific identifiers and metadata.
 
-Products may have multiple Tags.
+Products may have multiple Tags, referenced in the canonical Product message by
+their normalized names.
 
 Tags provide semantic classification and enable flexible product matching and searching.
 
@@ -103,7 +104,9 @@ Adapters return the retailer's raw package quantity/size along with normalized m
 
 ## Tags
 
-Tags are first-class database entities, not arbitrary free-form strings attached to Products.
+Tags are first-class database entities whose normalized names are their globally
+unique identifiers. Product's repeated tag strings are references to those managed
+identifiers, not arbitrary retailer-supplied values.
 
 Tag names are normalized and unique.
 

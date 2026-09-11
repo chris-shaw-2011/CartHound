@@ -1,0 +1,97 @@
+edition = "2024";
+
+package carthound.v1;
+
+import "buf/validate/validate.proto";
+import "google/type/decimal.proto";
+
+// One specific real-world product; generic shopping intent is not a Product.
+message Product {
+	// CartHound UUIDv7 in lowercase, hyphenated string form.
+	string id = 1 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Optional valid GTIN normalized to exactly 14 digits, including check digit.
+	// Left-pad valid shorter GTINs with zeros. Never parse as a number.
+	string gtin = 2 [(buf.validate.field).string.pattern = "^[0-9]{14}$"];
+
+	// Canonical product name.
+	string name = 3 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1
+			pattern: "\\S"
+		}
+	];
+
+	// The brand which produces this product
+	string brand = 4 [(buf.validate.field).string = {
+		min_len: 1
+		pattern: "\\S"
+	}];
+
+	// Positive whole number of items, must be at least one
+	uint32 item_count = 5 [(buf.validate.field).uint32.gte = 1];
+
+	// The required positive size of each item in this product
+	google.type.Decimal item_size = 6 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).cel = {
+			id: "product.item_size.positive_decimal"
+			message: "item_size must be a positive decimal"
+			expression: "this.value.matches(r'^(?:[+]?)(?:0*[1-9][0-9]*(?:\\.[0-9]*)?|0*\\.[0-9]*[1-9][0-9]*)(?:[eE][+-]?[0-9]+)?$')"
+		}
+	];
+
+	// The required measurement unit used to measure the size of each item
+	MeasurementUnit item_size_unit = 7 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).enum.defined_only = true
+	];
+
+	// List of unique tags which can be used for searching/filtering
+	repeated string tags = 8 [(buf.validate.field).repeated = {
+		unique: true
+		items: {
+			string: {
+				min_len: 1
+				pattern: "^[^\\sA-Z]+(?: [^\\sA-Z]+)*$"
+			}
+		}
+	}];
+
+	option (buf.validate.message).cel = {
+		id: "product.item_size.each"
+		message: "item_size must be exactly 1 when item_size_unit is EACH"
+		expression: "!has(this.item_size) || this.item_size_unit != 0 || this.item_size.value == '1'"
+	};
+	option (buf.validate.message).cel = {
+		id: "product.gtin.checksum"
+		message: "gtin must contain a valid GTIN-14 check digit"
+		expression: "!has(this.gtin) || !this.gtin.matches(r'^[0-9]{14}$') || (int(this.gtin.charAt(0)) * 3 + int(this.gtin.charAt(1)) + int(this.gtin.charAt(2)) * 3 + int(this.gtin.charAt(3)) + int(this.gtin.charAt(4)) * 3 + int(this.gtin.charAt(5)) + int(this.gtin.charAt(6)) * 3 + int(this.gtin.charAt(7)) + int(this.gtin.charAt(8)) * 3 + int(this.gtin.charAt(9)) + int(this.gtin.charAt(10)) * 3 + int(this.gtin.charAt(11)) + int(this.gtin.charAt(12)) * 3 + int(this.gtin.charAt(13))) % 10 == 0"
+	};
+
+	// US customary volume units are explicit to avoid confusing them with
+	// imperial volume units.
+	enum MeasurementUnit {
+		// EACH means one purchasable item when no physical measurement is known.
+		// buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+		MEASUREMENT_UNIT_EACH = 0;
+		MEASUREMENT_UNIT_GRAM = 1;
+		MEASUREMENT_UNIT_KILOGRAM = 2;
+		MEASUREMENT_UNIT_MASS_OUNCE = 3;
+		MEASUREMENT_UNIT_POUND = 4;
+		MEASUREMENT_UNIT_MILLILITER = 5;
+		MEASUREMENT_UNIT_LITER = 6;
+		MEASUREMENT_UNIT_US_FLUID_OUNCE = 7;
+		MEASUREMENT_UNIT_US_PINT = 8;
+		MEASUREMENT_UNIT_US_QUART = 9;
+		MEASUREMENT_UNIT_US_GALLON = 10;
+		MEASUREMENT_UNIT_MILLIGRAM = 12;
+	}
+}

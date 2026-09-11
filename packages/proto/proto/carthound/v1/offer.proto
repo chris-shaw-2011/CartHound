@@ -1,0 +1,86 @@
+edition = "2024";
+
+package carthound.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/money.proto";
+
+// A point in time observation of a for sale thing at a specific retailer
+message Offer {
+	// RetailerListing's CartHound UUIDv7 (lowercase, hyphenated).
+	string retailer_listing_id = 1 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Store's CartHound UUIDv7 (lowercase, hyphenated).
+	string store_id = 2 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Positive, nonzero current/effective price.
+	google.type.Money price = 3 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).cel = {
+			id: "offer.price.valid"
+			message: "price must use a three-letter uppercase currency code and a positive, nonzero valid Money value"
+			expression: "this.currency_code.matches(r'^[A-Z]{3}$') && this.units >= 0 && this.nanos >= 0 && this.nanos <= 999999999 && (this.units > 0 || this.nanos > 0)"
+		}
+	];
+
+	// Regular price only when separately known.
+	google.type.Money regular_price = 4 [(buf.validate.field).cel = {
+		id: "offer.regular_price.valid"
+		message: "regular_price must use a three-letter uppercase currency code and a non-negative valid Money value"
+		expression: "this.currency_code.matches(r'^[A-Z]{3}$') && this.units >= 0 && this.nanos >= 0 && this.nanos <= 999999999"
+	}];
+
+	// Depending on api we may get any of the following:
+	// Quantity currently avaialble - quantity field will be populated
+	// A flag indicating this can be purchased or not - status filed will be populated
+	// No indication of quantity or purchasibility - status will be populatd with unknown
+	oneof availability {
+		// Requires that either status or quantity must be set
+		option (buf.validate.oneof).required = true;
+
+		// The availability status of the item
+		// Only populated if the api doesn't return a quantity
+		// If the api gives no purchasibility indication the status will be set to unknown
+		AvailabilityStatus status = 5 [(buf.validate.field).enum.defined_only = true];
+		// The quantity currently known to be available
+		// Only populated when the retailer api provides this data
+		uint32 quantity = 6 [(buf.validate.field).uint32.gte = 1];
+	}
+
+	// When did we see this offer
+	google.protobuf.Timestamp observed_at = 7 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).timestamp.lt_now = true
+	];
+
+	option (buf.validate.message).cel = {
+		id: "offer.prices.same_currency"
+		message: "price and regular_price must use the same currency"
+		expression: "!has(this.price) || !has(this.regular_price) || this.price.currency_code == this.regular_price.currency_code"
+	};
+	option (buf.validate.message).cel = {
+		id: "offer.regular_price.not_less_than_price"
+		message: "regular_price must not be less than price"
+		expression: "!has(this.price) || !has(this.regular_price) || this.regular_price.units > this.price.units || (this.regular_price.units == this.price.units && this.regular_price.nanos >= this.price.nanos)"
+	};
+
+	enum AvailabilityStatus {
+		// buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+		AVAILABILITY_STATUS_UNKNOWN = 0;
+		AVAILABILITY_STATUS_IN_STOCK = 1;
+		AVAILABILITY_STATUS_OUT_OF_STOCK = 2;
+	}
+}

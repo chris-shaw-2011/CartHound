@@ -1,0 +1,13 @@
+version: v2
+clean: true
+inputs:
+  - directory: proto
+plugins:
+  - local: protoc-gen-es
+    out: src/gen
+    include_imports: true
+    opt:
+      - target=ts
+      - import_extension=ts
+      - erasable_syntax=true
+      - valid_types=protovalidate_required

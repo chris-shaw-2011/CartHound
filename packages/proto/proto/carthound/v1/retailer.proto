@@ -1,0 +1,32 @@
+edition = "2024";
+
+package carthound.v1;
+
+import "buf/validate/validate.proto";
+
+// Retailer is an entity: adding a retailer does not require changing an enum.
+message Retailer {
+	// CartHound UUIDv7 in lowercase, hyphenated string form.
+	string id = 1 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			uuid: true
+			pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+		}
+	];
+
+	// Stable unique lowercase slug, for example kroger or sams-club.
+	string slug = 2 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string.pattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+	];
+
+	// Nonempty display name.
+	string name = 3 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1
+			pattern: "\\S"
+		}
+	];
+}
