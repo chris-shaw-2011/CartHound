@@ -8,6 +8,13 @@ import "google/type/money.proto";
 
 // A point in time observation of a for sale thing at a specific retailer
 message Offer {
+	// PostgreSQL text cannot represent U+0000.
+	option (buf.validate.message).cel = {
+		id: "offer.text.postgresql"
+		message: "persisted text must not contain U+0000"
+		expression: "[this.retailer_listing_id, this.store_id].all(s, !s.contains('\\u0000'))"
+	};
+
 	// RetailerListing's CartHound UUIDv7 (lowercase, hyphenated).
 	string retailer_listing_id = 1 [
 		(buf.validate.field).required = true,
@@ -32,7 +39,7 @@ message Offer {
 		(buf.validate.field).cel = {
 			id: "offer.price.valid"
 			message: "price must use a three-letter uppercase currency code and a positive, nonzero valid Money value"
-			expression: "this.currency_code.matches(r'^[A-Z]{3}$') && this.units >= 0 && this.nanos >= 0 && this.nanos <= 999999999 && (this.units > 0 || this.nanos > 0)"
+			expression: "this.currency_code.matches(r'^[A-Z]{3}$') && this.units >= 0 && this.units <= 9223372036854775807 && this.nanos >= 0 && this.nanos <= 999999999 && (this.units > 0 || this.nanos > 0)"
 		}
 	];
 
@@ -40,7 +47,7 @@ message Offer {
 	google.type.Money regular_price = 4 [(buf.validate.field).cel = {
 		id: "offer.regular_price.valid"
 		message: "regular_price must use a three-letter uppercase currency code and a non-negative valid Money value"
-		expression: "this.currency_code.matches(r'^[A-Z]{3}$') && this.units >= 0 && this.nanos >= 0 && this.nanos <= 999999999"
+		expression: "this.currency_code.matches(r'^[A-Z]{3}$') && this.units >= 0 && this.units <= 9223372036854775807 && this.nanos >= 0 && this.nanos <= 999999999"
 	}];
 
 	// Depending on api we may get any of the following:
@@ -57,14 +64,23 @@ message Offer {
 		AvailabilityStatus status = 5 [(buf.validate.field).enum.defined_only = true];
 		// The quantity currently known to be available
 		// Only populated when the retailer api provides this data
-		uint32 quantity = 6 [(buf.validate.field).uint32.gte = 1];
+		uint32 quantity = 6 [(buf.validate.field).uint32 = { gte: 1 lte: 4294967295 }];
 	}
 
 	// When did we see this offer
 	google.protobuf.Timestamp observed_at = 7 [
 		(buf.validate.field).required = true,
+		(buf.validate.field).timestamp.gte = { seconds: -62135596800 },
 		(buf.validate.field).timestamp.lt_now = true
 	];
+
+	option (buf.validate.message).cel = {
+		id: "offer.observed_at.microseconds"
+		message: "observed_at must be aligned to microseconds"
+		// CEL treats Timestamp as a native value; string() retains nanoseconds.
+		// This is nanos % 1000 == 0 without selecting unsupported .nanos.
+		expression: "!has(this.observed_at) || string(this.observed_at).matches(r'^[^.]+(?:\\.[0-9]{1,6}0{0,3})?Z$')"
+	};
 
 	option (buf.validate.message).cel = {
 		id: "offer.prices.same_currency"

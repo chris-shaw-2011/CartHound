@@ -1,0 +1,72 @@
+// Reviewed field dispositions and structural signatures; update deliberately with schema changes.
+export const coverage: Record<string, Record<string, { signature: unknown[], disposition: string[] }>> = {
+	"carthound.v1.Retailer": {
+		id: { signature: [1, "scalar", 9, null, 1, null], disposition: ["column", "retailers.id"] },
+		slug: { signature: [2, "scalar", 9, null, 1, null], disposition: ["column", "retailers.slug"] },
+		name: { signature: [3, "scalar", 9, null, 1, null], disposition: ["column", "retailers.name"] },
+	},
+	"carthound.v1.Product": {
+		id: { signature: [1, "scalar", 9, null, 1, null], disposition: ["column", "products.id"] },
+		gtin: { signature: [2, "scalar", 9, null, 1, null], disposition: ["column", "products.gtin"] },
+		name: { signature: [3, "scalar", 9, null, 1, null], disposition: ["column", "products.name"] },
+		brand: { signature: [4, "scalar", 9, null, 1, null], disposition: ["column", "products.brand"] },
+		item_count: { signature: [5, "scalar", 13, null, 1, null], disposition: ["column", "products.item_count"] },
+		item_size: { signature: [6, "message", "google.type.Decimal", null, 1, null], disposition: ["flattened", "google.type.Decimal"] },
+		item_size_unit: { signature: [7, "enum", "carthound.v1.Product.MeasurementUnit", null, 1, null], disposition: ["column", "products.item_size_unit"] },
+		tags: { signature: [8, "list", 9, "scalar", 2, null], disposition: ["array", "products.tags"] },
+	},
+	"carthound.v1.Store": {
+		id: { signature: [1, "scalar", 9, null, 1, null], disposition: ["column", "stores.id"] },
+		retailer_id: { signature: [2, "scalar", 9, null, 1, null], disposition: ["reference", "stores.retailer_id"] },
+		retailer_store_id: { signature: [3, "scalar", 9, null, 1, null], disposition: ["column", "stores.retailer_store_id"] },
+		name: { signature: [4, "scalar", 9, null, 1, null], disposition: ["column", "stores.name"] },
+		address: { signature: [5, "message", "google.type.PostalAddress", null, 1, null], disposition: ["flattened", "google.type.PostalAddress"] },
+		location: { signature: [6, "message", "google.type.LatLng", null, 1, null], disposition: ["flattened", "google.type.LatLng"] },
+	},
+	"carthound.v1.RetailerListing": {
+		id: { signature: [1, "scalar", 9, null, 1, null], disposition: ["column", "retailer_listings.id"] },
+		retailer_id: { signature: [2, "scalar", 9, null, 1, null], disposition: ["reference", "retailer_listings.retailer_id"] },
+		product_id: { signature: [3, "scalar", 9, null, 1, null], disposition: ["reference", "retailer_listings.product_id"] },
+		retailer_product_id: { signature: [4, "scalar", 9, null, 1, null], disposition: ["column", "retailer_listings.retailer_product_id"] },
+		name: { signature: [5, "scalar", 9, null, 1, null], disposition: ["column", "retailer_listings.name"] },
+		raw_package_description: { signature: [6, "scalar", 9, null, 1, null], disposition: ["column", "retailer_listings.raw_package_description"] },
+	},
+	"carthound.v1.Offer": {
+		retailer_listing_id: { signature: [1, "scalar", 9, null, 1, null], disposition: ["reference", "current_offers.retailer_listing_id", "offer_history.retailer_listing_id"] },
+		store_id: { signature: [2, "scalar", 9, null, 1, null], disposition: ["reference", "current_offers.store_id", "offer_history.store_id"] },
+		price: { signature: [3, "message", "google.type.Money", null, 1, null], disposition: ["flattened", "google.type.Money"] },
+		regular_price: { signature: [4, "message", "google.type.Money", null, 1, null], disposition: ["flattened", "google.type.Money"] },
+		status: { signature: [5, "enum", "carthound.v1.Offer.AvailabilityStatus", null, 1, "availability"], disposition: ["oneof", "current_offers.availability_status", "offer_history.availability_status"] },
+		quantity: { signature: [6, "scalar", 13, null, 1, "availability"], disposition: ["oneof", "current_offers.availability_quantity", "offer_history.availability_quantity"] },
+		observed_at: { signature: [7, "message", "google.protobuf.Timestamp", null, 1, null], disposition: ["flattened", "google.protobuf.Timestamp"] },
+	},
+	"google.type.Decimal": {
+		value: { signature: [1, "scalar", 9, null, 2, null], disposition: ["column", "products.item_size", "products.item_size_decimal"] },
+	},
+	"google.type.Money": {
+		currency_code: { signature: [1, "scalar", 9, null, 2, null], disposition: ["column", "current_offers.price_currency_code", "current_offers.regular_price_currency_code", "offer_history.price_currency_code", "offer_history.regular_price_currency_code"] },
+		units: { signature: [2, "scalar", 3, null, 2, null], disposition: ["column", "current_offers.price_units", "current_offers.regular_price_units", "offer_history.price_units", "offer_history.regular_price_units"] },
+		nanos: { signature: [3, "scalar", 5, null, 2, null], disposition: ["column", "current_offers.price_nanos", "current_offers.regular_price_nanos", "offer_history.price_nanos", "offer_history.regular_price_nanos"] },
+	},
+	"google.type.PostalAddress": {
+		revision: { signature: [1, "scalar", 5, null, 2, null], disposition: ["column", "stores.address_revision"] },
+		region_code: { signature: [2, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_region_code"] },
+		language_code: { signature: [3, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_language_code"] },
+		postal_code: { signature: [4, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_postal_code"] },
+		sorting_code: { signature: [5, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_sorting_code"] },
+		administrative_area: { signature: [6, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_administrative_area"] },
+		locality: { signature: [7, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_locality"] },
+		sublocality: { signature: [8, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_sublocality"] },
+		address_lines: { signature: [9, "list", 9, "scalar", 2, null], disposition: ["array", "stores.address_lines"] },
+		recipients: { signature: [10, "list", 9, "scalar", 2, null], disposition: ["array", "stores.address_recipients"] },
+		organization: { signature: [11, "scalar", 9, null, 2, null], disposition: ["column", "stores.address_organization"] },
+	},
+	"google.type.LatLng": {
+		latitude: { signature: [1, "scalar", 1, null, 2, null], disposition: ["column", "stores.latitude"] },
+		longitude: { signature: [2, "scalar", 1, null, 2, null], disposition: ["column", "stores.longitude"] },
+	},
+	"google.protobuf.Timestamp": {
+		seconds: { signature: [1, "scalar", 3, null, 2, null], disposition: ["column", "current_offers.observed_at", "offer_history.observed_at"] },
+		nanos: { signature: [2, "scalar", 5, null, 2, null], disposition: ["column", "current_offers.observed_at", "offer_history.observed_at"] },
+	},
+}

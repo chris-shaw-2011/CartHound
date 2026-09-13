@@ -7,6 +7,13 @@ import "buf/validate/validate.proto";
 // A retailer's representation of a specific Product. Identity fields are
 // required by domain; retailer identifiers are interpreted only by its adapter.
 message RetailerListing {
+	// PostgreSQL text cannot represent U+0000.
+	option (buf.validate.message).cel = {
+		id: "retailer_listing.text.postgresql"
+		message: "persisted text must not contain U+0000"
+		expression: "[this.id, this.retailer_id, this.product_id, this.retailer_product_id, this.name, this.raw_package_description].all(s, !s.contains('\\u0000'))"
+	};
+
 	// CartHound UUIDv7 in lowercase, hyphenated string form.
 	string id = 1 [
 		(buf.validate.field).required = true,
@@ -38,6 +45,8 @@ message RetailerListing {
 	string retailer_product_id = 4 [
 		(buf.validate.field).required = true,
 		(buf.validate.field).string = {
+			// B-tree tuple/header plus retailer UUID leaves 2676 UTF-8 bytes.
+			max_bytes: 2676
 			min_len: 1
 			pattern: "\\S"
 		}

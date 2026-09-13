@@ -20,4 +20,9 @@ export default [
 		files: ["packages/core/src/decimal.ts"],
 		rules: { "carthound/no-raw-protobuf-numeric-fields": ["error", { allow: ["google.type.Decimal"] }] },
 	},
+	{
+		// Exact persistence mapping must read components without numeric conversion.
+		files: ["packages/persistence/src/mappers.ts"],
+		rules: { "carthound/no-raw-protobuf-numeric-fields": ["error", { allow: ["google.type.Money", "google.type.Decimal"] }] },
+	},
 ]

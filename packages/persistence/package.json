@@ -1,0 +1,28 @@
+{
+	"name": "@carthound/persistence",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"node": "./src/index.ts"
+	},
+	"scripts": {
+		"build": "tsc --noEmit",
+		"generate": "drizzle-kit generate",
+		"check:migrations": "node scripts/check-migrations.ts",
+		"test:postgres": "node scripts/test-postgres.ts"
+	},
+	"dependencies": {
+		"@bufbuild/protobuf": "2.15.0",
+		"@bufbuild/protovalidate": "1.2.0",
+		"@carthound/core": "0.0.0",
+		"@carthound/proto": "0.0.0",
+		"drizzle-orm": "0.45.2",
+		"pg": "8.23.0"
+	},
+	"devDependencies": {
+		"@types/pg": "8.23.1",
+		"drizzle-kit": "0.31.10",
+		"zod": "4.6.4"
+	}
+}

@@ -6,6 +6,13 @@ import "buf/validate/validate.proto";
 
 // Retailer is an entity: adding a retailer does not require changing an enum.
 message Retailer {
+	// PostgreSQL text cannot represent U+0000.
+	option (buf.validate.message).cel = {
+		id: "retailer.text.postgresql"
+		message: "persisted text must not contain U+0000"
+		expression: "[this.id, this.slug, this.name].all(s, !s.contains('\\u0000'))"
+	};
+
 	// CartHound UUIDv7 in lowercase, hyphenated string form.
 	string id = 1 [
 		(buf.validate.field).required = true,
@@ -18,6 +25,8 @@ message Retailer {
 	// Stable unique lowercase slug, for example kroger or sams-club.
 	string slug = 2 [
 		(buf.validate.field).required = true,
+		// Standard PostgreSQL 8 KiB B-tree: 2704 minus 8-byte tuple and 4-byte text headers.
+		(buf.validate.field).string.max_bytes = 2692,
 		(buf.validate.field).string.pattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
 	];
 

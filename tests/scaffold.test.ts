@@ -13,6 +13,7 @@ const workspaces = [
 	"packages/proto",
 	"packages/core",
 	"packages/retailers",
+	"packages/persistence",
 ]
 
 describe("monorepo scaffold", () => {

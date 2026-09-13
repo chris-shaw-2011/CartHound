@@ -1,0 +1,41 @@
+{
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1789307075987,
+			"tag": "0000_extensions",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1789307076482,
+			"tag": "0001_foundation",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1789307076964,
+			"tag": "0002_tag_projection",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1789307382037,
+			"tag": "0003_uuid_variant",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1789307909613,
+			"tag": "0004_text_index_bounds",
+			"breakpoints": true
+		}
+	]
+}

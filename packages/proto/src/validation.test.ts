@@ -119,7 +119,7 @@ describe("Protovalidate domain invariants", () => {
 	it("validates product identifiers, normalized tags, and complete positive measurements", () => {
 		expectInvalid(ProductSchema, { ...validProduct, gtin: "123" }, "string.pattern")
 		expectInvalid(ProductSchema, { ...validProduct, gtin: "00012345678904" }, "product.gtin.checksum")
-		expectInvalid(ProductSchema, { ...validProduct, itemCount: 0 }, "uint32.gte")
+		expectInvalid(ProductSchema, { ...validProduct, itemCount: 0 }, "uint32.gte_lte")
 		expectInvalid(ProductSchema, {
 			id: productId,
 			name: "Sparkling water",
@@ -196,7 +196,7 @@ describe("Protovalidate domain invariants", () => {
 		expectInvalid(OfferSchema, {
 			...validOffer,
 			availability: { case: "quantity", value: 0 },
-		}, "uint32.gte")
+		}, "uint32.gte_lte")
 		expectInvalid(OfferSchema, {
 			...validOffer,
 			observedAt: create(TimestampSchema, { seconds: 253402300799n }),

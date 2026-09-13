@@ -31,7 +31,9 @@ The React frontend communicates with the backend using ConnectRPC/gRPC-Web over 
 
 Monetary amounts are not represented using JavaScript floating-point numbers.
 
-Integer minor units (cents) or PostgreSQL NUMERIC/DECIMAL is used for prices.
+Google Money currency_code, bigint units and integer nanos are persisted directly.
+Exact Product Decimal values use unconstrained PostgreSQL NUMERIC plus the original
+Decimal string for lossless reconstruction.
 
 Retailer integrations implement a common adapter interface.
 
@@ -63,6 +65,7 @@ Use a monorepo.
 - packages/proto - protobuf API definitions and generated models
 - packages/core - shared domain logic
 - packages/retailers - retailer adapter interfaces and implementations
+- packages/persistence - private PostgreSQL relational projection and migrations (never a browser dependency)
 
 ## Data model principles
 
@@ -82,7 +85,7 @@ The same Product may have listings at multiple retailers.
 Retailer listings represent a retailer's representation of a Product and contain retailer-specific identifiers and metadata.
 
 Products may have multiple Tags, referenced in the canonical Product message by
-their normalized names.
+their normalized names. Their persisted array is authoritative.
 
 Tags provide semantic classification and enable flexible product matching and searching.
 
@@ -104,13 +107,17 @@ Adapters return the retailer's raw package quantity/size along with normalized m
 
 ## Tags
 
-Tags are first-class database entities whose normalized names are their globally
-unique identifiers. Product's repeated tag strings are references to those managed
-identifiers, not arbitrary retailer-supplied values.
+Product.tags is canonical persisted data stored as products.tags text[].
+Tags use normalized unique names, validated by the canonical Protobuf rules.
+There is no canonical tags table or product_tags join table.
+A derived tag_projection table stores currently used tag names and product counts;
+a PostgreSQL trigger maintains it, and it is completely rebuildable from products.
+See docs/decisions/0014-postgresql-persistence-foundation.md, which supersedes
+the earlier managed-tag-table design.
 
 Tag names are normalized and unique.
 
-Retailer adapters do not create new Tags automatically.
+Retailer adapters do not automatically invent tag names or bypass canonical tag validation.
 
 Tags represent semantic product characteristics such as:
 - butter

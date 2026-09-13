@@ -7,6 +7,13 @@ import "google/type/decimal.proto";
 
 // One specific real-world product; generic shopping intent is not a Product.
 message Product {
+	// PostgreSQL text cannot represent U+0000.
+	option (buf.validate.message).cel = {
+		id: "product.text.postgresql"
+		message: "persisted text must not contain U+0000"
+		expression: "[this.id, this.gtin, this.name, this.brand].all(s, !s.contains('\\u0000')) && this.tags.all(s, !s.contains('\\u0000'))"
+	};
+
 	// CartHound UUIDv7 in lowercase, hyphenated string form.
 	string id = 1 [
 		(buf.validate.field).required = true,
@@ -36,7 +43,7 @@ message Product {
 	}];
 
 	// Positive whole number of items, must be at least one
-	uint32 item_count = 5 [(buf.validate.field).uint32.gte = 1];
+	uint32 item_count = 5 [(buf.validate.field).uint32 = { gte: 1 lte: 4294967295 }];
 
 	// The required positive size of each item in this product
 	google.type.Decimal item_size = 6 [
@@ -45,6 +52,12 @@ message Product {
 			id: "product.item_size.positive_decimal"
 			message: "item_size must be a positive decimal"
 			expression: "this.value.matches(r'^(?:[+]?)(?:0*[1-9][0-9]*(?:\\.[0-9]*)?|0*\\.[0-9]*[1-9][0-9]*)(?:[eE][+-]?[0-9]+)?$')"
+		},
+		// Bounds on significant digit positions, after accounting for exponent.
+		(buf.validate.field).cel = {
+			id: "product.item_size.postgresql_numeric"
+			message: "item_size must fit PostgreSQL NUMERIC: 131072 integer and 16383 fractional digits"
+			expression: "[this.value.lowerAscii().split('e')].all(parts, [parts[0].replace('+', '')].all(m, [m.replace('.', '')].all(digits, [m.split('.')[0].size()].all(point, [parts.size() == 2 ? int(parts[1]) : 0].all(exponent, ['1','2','3','4','5','6','7','8','9'].all(d, digits.indexOf(d) == -1 || (point + exponent - digits.indexOf(d) <= 131072 && digits.lastIndexOf(d) - point + 1 - exponent <= 16383)))))))"
 		}
 	];
 
@@ -59,6 +72,8 @@ message Product {
 		unique: true
 		items: {
 			string: {
+				// Fits tag projection B-tree and Product GIN entries on 8 KiB pages.
+				max_bytes: 2692
 				min_len: 1
 				pattern: "^[^\\sA-Z]+(?: [^\\sA-Z]+)*$"
 			}

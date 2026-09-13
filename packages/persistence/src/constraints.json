@@ -1,0 +1,12 @@
+{
+	"carthound.v1.Offer": "b71678733cb3d67ec9d90f1a21c9dffd8e2a4e942eff89d4b187784a9653cd62",
+	"google.type.Money": "6755f7c8001dc04289b559c589e5270ebae276b542c4c42a7dc502e5882574e5",
+	"google.protobuf.Timestamp": "1136b55096268637e89e4eb2e878e17ffb7d9c275733f85680fdc09828e12824",
+	"carthound.v1.Product": "8dd7e6a40c8848b3d410e1b279602397f22dd69556a91779297db3823ede5713",
+	"google.type.Decimal": "8b149ecb7e6d45d0c16dc8d473182b03bbf9aef13e9fd8f91bbffa2d2148b7c2",
+	"carthound.v1.RetailerListing": "089d2c5a9b136111a2de8d23e125902a292d877a63397af68319d7a7911be58c",
+	"carthound.v1.Retailer": "65788cd704fc8fb1578e9716fe4c92ea66baaa30fc9f74763dcd4ee737d471f6",
+	"carthound.v1.Store": "eee7b79f6ea33c769fb8d14ecaafcec533b022ec75595a908973b1a9fe38dd49",
+	"google.type.PostalAddress": "75d9297d094bc248ea8a4f8ad1364232f0e89da4a8544ee1824db353ff5dc6ef",
+	"google.type.LatLng": "c2f7f928b7a1812fbdccaf6ccd36550a18686bb17b0dbc9a476df28ae0f79d4c"
+}

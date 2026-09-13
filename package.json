@@ -14,7 +14,7 @@
 	],
 	"scripts": {
 		"build": "tsc --noEmit && npm run build --workspaces --if-present",
-		"check": "npm run proto:check && npm run lint && npm run knip && npm run sherif && npm run build && npm test",
+		"check": "npm run proto:check && npm run persistence:check && npm run lint && npm run knip && npm run sherif && npm run build && npm test",
 		"format": "eslint . --fix",
 		"knip": "knip --config knip.config.ts --reporter compact",
 		"lint": "eslint . && npm run proto:lint",
@@ -24,7 +24,10 @@
 		"proto:generate": "npm run generate --workspace @carthound/proto",
 		"proto:clean": "npm run clean --workspace @carthound/proto",
 		"proto:lint": "npm run lint:proto --workspace @carthound/proto",
-		"proto:check": "npm run proto:clean && npm run proto:lint && npm run proto:generate"
+		"proto:check": "npm run proto:clean && npm run proto:lint && npm run proto:generate",
+		"persistence:generate": "npm run generate --workspace @carthound/persistence --",
+		"persistence:check": "npm run check:migrations --workspace @carthound/persistence",
+		"persistence:test:postgres": "npm run test:postgres --workspace @carthound/persistence"
 	},
 	"devDependencies": {
 		"@bufbuild/buf": "1.73.0",
@@ -46,6 +49,9 @@
 		]
 	},
 	"allowScripts": {
-		"@bufbuild/buf": true
+		"@bufbuild/buf": true,
+		"esbuild@0.28.2": true,
+		"esbuild@0.25.12": true,
+		"esbuild@0.18.20": true
 	}
 }
