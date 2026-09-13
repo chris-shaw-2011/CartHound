@@ -27,7 +27,13 @@
 		"proto:check": "npm run proto:clean && npm run proto:lint && npm run proto:generate",
 		"persistence:generate": "npm run generate --workspace @carthound/persistence --",
 		"persistence:check": "npm run check:migrations --workspace @carthound/persistence",
-		"persistence:test:postgres": "npm run test:postgres --workspace @carthound/persistence"
+		"persistence:test:postgres": "npm run test:postgres --workspace @carthound/persistence",
+		"persistence:migrate": "npm run migrate --workspace @carthound/persistence",
+		"docker:db:up": "docker compose --profile local-db up -d --wait postgres",
+		"docker:db:down": "docker compose --profile local-db down",
+		"docker:db:reset": "echo \"DESTRUCTIVE: deleting the local PostgreSQL database volume\" && docker compose --profile local-db down --volumes",
+		"docker:migrate": "docker compose build --pull migrate && docker compose run --rm --no-deps migrate",
+		"docker:test:persistence": "sh scripts/test-persistence-docker.sh"
 	},
 	"devDependencies": {
 		"@bufbuild/buf": "1.73.0",

@@ -8,6 +8,7 @@ import { readMigrationFiles } from "drizzle-orm/migrator"
 import { drizzle } from "drizzle-orm/node-postgres"
 import pg from "pg"
 import { offerMapper, productMapper, retailerListingMapper, retailerMapper, storeMapper } from "../src/mappers.ts"
+import { checkCompatibility } from "./database.ts"
 import { currentOffers, offerHistory, products, retailerListings, retailers, stores, tagProjection } from "../src/schema.ts"
 
 // Explicit integration command only. Supply a disposable PostgreSQL 18.6 database.
@@ -17,10 +18,7 @@ const pool = new pg.Pool({ connectionString, options: "-c search_path=public -c 
 try {
 	const client = await pool.connect()
 	try {
-		const version = await client.query<{ server_version_num: string }>("SHOW server_version_num")
-		assert(Number(version.rows[0]?.server_version_num) >= 180006 && Number(version.rows[0]?.server_version_num) < 190000)
-		assert.equal((await client.query<{ block_size: string }>("SHOW block_size")).rows[0]?.block_size, "8192")
-		assert.equal((await client.query<{ server_encoding: string }>("SHOW server_encoding")).rows[0]?.server_encoding, "UTF8")
+		await checkCompatibility(client)
 		const tables = await client.query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
 		assert.equal(tables.rows.length, 0, "Integration tests require an empty disposable database")
 		await client.query("BEGIN")

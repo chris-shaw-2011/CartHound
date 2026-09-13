@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+**/.npmrc
+!.npmrc
+**/.cache
+**/postgres-data
+**/pgdata
+packages/proto/src/gen
+.codex
+.agents

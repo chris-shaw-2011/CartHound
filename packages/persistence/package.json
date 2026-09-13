@@ -10,7 +10,8 @@
 		"build": "tsc --noEmit",
 		"generate": "drizzle-kit generate",
 		"check:migrations": "node scripts/check-migrations.ts",
-		"test:postgres": "node scripts/test-postgres.ts"
+		"test:postgres": "node scripts/test-postgres.ts",
+		"migrate": "node scripts/migrate.ts"
 	},
 	"dependencies": {
 		"@bufbuild/protobuf": "2.15.0",

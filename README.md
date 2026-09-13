@@ -78,7 +78,7 @@ Local rule tooling lives in `packages/eslint`, with TypeScript 6 matching the sh
 
 ## PostgreSQL persistence
 
-`packages/persistence` targets PostgreSQL 18.6 (UTF-8, standard 8 KiB pages) with stable Drizzle ORM/Kit and pg. Schema and mappers remain package internals; the browser must never depend on this workspace. No runtime connection configuration or ingestion service is implemented.
+`packages/persistence` targets PostgreSQL 18.6 (UTF-8, standard 8 KiB pages) with stable Drizzle ORM/Kit and pg. Schema and mappers remain package internals; the browser must never depend on this workspace. Database tooling uses `DATABASE_URL`; ingestion services remain deferred.
 
 ```sh
 npm run persistence:generate        # Intentionally generate and review schema migrations
@@ -86,7 +86,7 @@ npm run persistence:check           # Read-only, in-memory schema/snapshot drift
 npm run persistence:test:postgres   # Explicit live test; requires CARTHOUND_TEST_DATABASE_URL
 ```
 
-Normal `npm run check` includes persistence contract/mapper tests and drift verification without requiring PostgreSQL. The explicit live command requires an empty disposable PostgreSQL 18.6 database, applies the actual migrations and leaves that database for the caller to dispose of. It does not start Docker. Live database execution is deferred to the infrastructure task.
+Normal `npm run check` includes persistence contract/mapper tests and drift verification without requiring PostgreSQL. The explicit live command requires an empty disposable PostgreSQL 18.6 database, applies the actual migrations and leaves that database for the caller to dispose of. It does not start Docker. The disposable Docker wrapper below supplies and cleans up its database.
 
 Maintain `src/schema.ts`; commit reviewed SQL and metadata under `packages/persistence/migrations/`. Never rewrite applied migrations. For custom PostgreSQL changes use `npm run persistence:generate -- --custom --name=description`, then write/review the SQL. Update explicit field coverage and validation fingerprints only after reviewing the persistence impact of a canonical change; do not regenerate them blindly to make checks green.
 
@@ -95,3 +95,80 @@ Products store tags in `text[]` with a GIN index. The trigger-maintained `tag_pr
 Persistence preserves Decimal spelling as well as numeric value, Money bigint components, all Google address fields, optional presence and Timestamp microseconds. Proto rules explicitly bound NUMERIC digit positions, require microsecond-aligned observations, exclude PostgreSQL-incompatible NUL text and bound indexed UTF-8 strings to their physical index capacity.
 
 See [persistence design](docs/decisions/0014-postgresql-persistence-foundation.md), [exact value bounds](docs/decisions/0015-persistence-value-representation.md), and [implementation history](docs/history/2026-09-13-persistence.md).
+
+## Database infrastructure
+
+Docker is optional. Host and container processes use the same PostgreSQL interface
+and `DATABASE_URL`, whether the database is in Compose or external. API, web and
+worker images are deferred. See [decision 0016](docs/decisions/0016-optional-docker-database-infrastructure.md).
+
+Copy `.env.example` to ignored `.env`, set your own local initialization password,
+and set `DATABASE_URL` with matching credentials and the appropriate hostname.
+Percent-encode special characters in URL credentials. Compose reads `.env`; host
+npm commands use exported environment variables (they do not automatically load it).
+`CARTHOUND_POSTGRES_USER`, `CARTHOUND_POSTGRES_PASSWORD` and `CARTHOUND_POSTGRES_DB`
+only initialize the optional container; they never construct the connection URL.
+A missing local password causes the official image to refuse initialization.
+
+| Consumer / database | Connection URL pattern |
+| --- | --- |
+| Host / Compose PostgreSQL | `postgresql://USER:PASSWORD@127.0.0.1:5432/carthound` |
+| Compose tooling / Compose PostgreSQL | `postgresql://USER:PASSWORD@postgres:5432/carthound` |
+| Host or Compose tooling / external PostgreSQL | `postgresql://USER:PASSWORD@database.example.internal:5432/carthound` |
+
+These URLs are placeholders. `localhost` inside a container refers to that container.
+External names must resolve and be reachable from the consuming process; normal pg
+URL options such as `sslmode` remain supported.
+
+```sh
+npm run docker:db:up       # Starts local-db profile; waits for health
+npm run docker:migrate     # Builds tooling and runs the host migration implementation
+npm run docker:db:down     # Stops services; retains the development volume
+npm run docker:test:persistence # Fresh isolated database; automatically cleaned up
+npm run docker:db:reset    # DESTRUCTIVE: deletes the local database volume and all its data
+```
+
+The equivalent direct start is `docker compose --profile local-db up -d postgres`.
+External migrations need no local database profile or Docker database service:
+set `DATABASE_URL` to the external server and run `npm run docker:migrate`, or run
+on the host after `npm ci`:
+
+```sh
+# Export DATABASE_URL securely in your environment first.
+npm run persistence:migrate
+```
+
+Migrations use Drizzle's committed migration journal and are repeatable; run one
+migration job at a time. The runner independently probes connectivity with bounded
+startup retries, checks server compatibility, applies only pending migrations and
+closes connections. It never uses image initialization scripts for schema upgrades.
+Errors return a nonzero status without dumping connection URLs or raw driver errors.
+For SQL failures, inspect PostgreSQL server logs for details.
+
+PostgreSQL must be stable 18.x, at least 18.6, with UTF8 encoding and 8192-byte blocks.
+The migration user must own/manage the target schema and be permitted to create
+`pg_trgm`, or a DBA must enable that extension in the CartHound database beforehand.
+The local image is `postgres:18.6-bookworm`, with explicit checksum initialization,
+a healthcheck, loopback-only port and named `postgres_data` volume mounted at
+`/var/lib/postgresql`. Initialization credentials/options affect only a new data
+directory; changing `.env` does not change existing roles/passwords or rewrite data.
+Back up valuable data before reset. Normal down/up retains it.
+
+Builds use `node:current-bookworm-slim` (verified as 26.8.2 when introduced).
+Docker tracks current stable Node; `.node-version` remains the intentionally
+validated repository major. A future Docker tag advance does not silently update
+that file. The convenience build commands pull the current base before building.
+Export the same `GITHUB_TOKEN` needed for npm installation before Docker builds;
+Compose passes it as a BuildKit secret, without embedding it in the image. Clean
+builds require access to npm, GitHub Packages and the Buf Schema Registry. They
+install workspace dependencies and generate the uncommitted Proto output. No host
+source mounts or generated JavaScript are needed.
+
+The integration wrapper requires Docker Compose with `--wait`, BuildKit and a POSIX
+shell. It creates a unique Compose project, random temporary credentials and tmpfs
+PostgreSQL storage without published ports. It ignores local `.env`, runs the existing
+`persistence:test:postgres` harness, preserves its exit status and cleans up even on
+failure or handled interruption. Forced termination or host failure can prevent traps;
+remove a leftover `carthound-test-*` project with `docker compose -p PROJECT --profile test down --volumes`.
+It never uses the development volume. Ordinary `npm run check` requires neither
+Docker nor a live database; CI can explicitly add `npm run docker:test:persistence`.
