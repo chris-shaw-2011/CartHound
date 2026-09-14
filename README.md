@@ -78,7 +78,7 @@ Local rule tooling lives in `packages/eslint`, with TypeScript 6 matching the sh
 
 ## PostgreSQL persistence
 
-`packages/persistence` targets PostgreSQL 18.6 (UTF-8, standard 8 KiB pages) with stable Drizzle ORM/Kit and pg. Schema and mappers remain package internals; the browser must never depend on this workspace. Database tooling uses `DATABASE_URL`; ingestion services remain deferred.
+`packages/persistence` targets PostgreSQL 18.6 (UTF-8, standard 8 KiB pages) with stable Drizzle ORM/Kit and pg. Schema and mappers remain package internals; the browser must never depend on this workspace. Database tooling supports Compose or external PostgreSQL through `DATABASE_URL`; CartHound objects always live in `public`, and owned connections set `search_path=public` so server/user defaults cannot redirect them. Arbitrary schema selection is not supported, and there is no separate schema setting. Ingestion services remain deferred.
 
 ```sh
 npm run persistence:generate        # Intentionally generate and review schema migrations

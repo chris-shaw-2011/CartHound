@@ -4,28 +4,34 @@ import { fileURLToPath } from "node:url"
 import { create, equals } from "@bufbuild/protobuf"
 import { OfferSchema, ProductSchema, RetailerListingSchema, RetailerSchema, StoreSchema } from "@carthound/proto"
 import { eq } from "drizzle-orm"
-import { readMigrationFiles } from "drizzle-orm/migrator"
 import { drizzle } from "drizzle-orm/node-postgres"
+import { migrate } from "drizzle-orm/node-postgres/migrator"
 import pg from "pg"
 import { offerMapper, productMapper, retailerListingMapper, retailerMapper, storeMapper } from "../src/mappers.ts"
-import { checkCompatibility } from "./database.ts"
+import { checkCompatibility, postgresPoolConfig } from "./database.ts"
 import { currentOffers, offerHistory, products, retailerListings, retailers, stores, tagProjection } from "../src/schema.ts"
 
 // Explicit integration command only. Supply a disposable PostgreSQL 18.6 database.
 const connectionString = process.env.CARTHOUND_TEST_DATABASE_URL
 if (!connectionString) throw new Error("Set CARTHOUND_TEST_DATABASE_URL to a disposable PostgreSQL 18.6 test database")
-const pool = new pg.Pool({ connectionString, options: "-c search_path=public -c timezone=UTC -c datestyle=ISO,MDY" })
+const pool = new pg.Pool(postgresPoolConfig(connectionString))
 try {
 	const client = await pool.connect()
 	try {
 		await checkCompatibility(client)
+		const session = await client.query<{ current_schema: string, search_path: string, timezone: string, date_style: string }>(
+			"SELECT current_schema(), current_setting('search_path') AS search_path, current_setting('TimeZone') AS timezone, current_setting('DateStyle') AS date_style",
+		)
+		assert.deepEqual(
+			session.rows,
+			[{ current_schema: "public", search_path: "public", timezone: "UTC", date_style: "ISO, MDY" }],
+			"CartHound connections must enforce public schema, UTC and ISO DateStyle",
+		)
 		const tables = await client.query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
 		assert.equal(tables.rows.length, 0, "Integration tests require an empty disposable database")
-		await client.query("BEGIN")
-		for (const migration of readMigrationFiles({ migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url)) })) {
-			for (const statement of migration.sql) await client.query(statement)
-		}
-		await client.query("COMMIT")
+		const migrationsFolder = fileURLToPath(new URL("../migrations", import.meta.url))
+		await migrate(drizzle(client), { migrationsFolder })
+		await migrate(drizzle(client), { migrationsFolder })
 	}
 	finally { client.release() }
 	const db = drizzle(pool)

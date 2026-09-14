@@ -2,11 +2,11 @@ import { fileURLToPath } from "node:url"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { migrate } from "drizzle-orm/node-postgres/migrator"
 import pg from "pg"
-import { checkCompatibility, connectWhenReady, DatabaseSetupError } from "./database.ts"
+import { checkCompatibility, connectWhenReady, DatabaseSetupError, postgresPoolConfig } from "./database.ts"
 
 const connectionString = process.env.DATABASE_URL
 if (!connectionString) throw new Error("Set DATABASE_URL to the PostgreSQL database to migrate")
-const pool = new pg.Pool({ connectionString, connectionTimeoutMillis: 5000 })
+const pool = new pg.Pool({ ...postgresPoolConfig(connectionString), connectionTimeoutMillis: 5000 })
 try {
 	const client = await connectWhenReady(pool)
 	try {

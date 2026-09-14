@@ -11,6 +11,13 @@ uses `DATABASE_URL` through pg; Docker initialization variables configure only t
 optional database container. No database-location detection or second persistence
 implementation exists. API, web and worker containerization remains deferred.
 
+CartHound supports external PostgreSQL servers, but not arbitrary PostgreSQL
+schema selection. CartHound-owned objects live in the normal `public` schema, and
+owned connections set `search_path=public` through pg's connection options so a
+server or database-user default cannot redirect unqualified migrations or queries.
+`DATABASE_URL` remains the only database-location/configuration input for this
+concern; there is no schema environment variable or application setting.
+
 The `local-db` profile starts PostgreSQL 18.6 Bookworm, publishing only
 `127.0.0.1:5432`. A named volume mounts at `/var/lib/postgresql`, matching the
 PostgreSQL 18 image layout. Initialization explicitly enables UTF-8 and checksums;

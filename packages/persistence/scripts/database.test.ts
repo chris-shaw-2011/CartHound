@@ -1,8 +1,16 @@
 import type pg from "pg"
 import { afterEach, expect, it, vi } from "vitest"
-import { checkCompatibility, connectWhenReady } from "./database.ts"
+import { checkCompatibility, connectWhenReady, postgresPoolConfig } from "./database.ts"
 
 afterEach(() => vi.useRealTimers())
+
+it("keeps the database URL intact and applies CartHound's PostgreSQL session settings last", () => {
+	const connectionString = "postgresql://database.example/carthound?sslmode=require&application_name=CartHound&options=-c%20statement_timeout%3D5000%20-c%20search_path%3Delsewhere"
+	expect(postgresPoolConfig(connectionString)).toEqual({
+		connectionString,
+		options: "-c statement_timeout=5000 -c search_path=elsewhere -c search_path=public -c timezone=UTC -c datestyle=ISO,MDY",
+	})
+})
 
 it.each([
 	["180006", "UTF8", "8192", true],

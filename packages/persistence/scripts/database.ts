@@ -3,6 +3,19 @@ import type pg from "pg"
 
 export class DatabaseSetupError extends Error {}
 
+export function postgresPoolConfig(connectionString: string): pg.PoolConfig {
+	const existingOptions = new URL(connectionString).searchParams.get("options")
+	return {
+		connectionString,
+		options: [
+			existingOptions,
+			"-c search_path=public",
+			"-c timezone=UTC",
+			"-c datestyle=ISO,MDY",
+		].filter(Boolean).join(" "),
+	}
+}
+
 export async function checkCompatibility(client: pg.PoolClient) {
 	const result = await client.query<{ version: string, encoding: string, block_size: string }>(
 		"SELECT current_setting('server_version_num') AS version, current_setting('server_encoding') AS encoding, current_setting('block_size') AS block_size",
